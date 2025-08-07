@@ -57,6 +57,12 @@ def insert_docstrings(source_code: str, docstring_data: List[tuple]) -> str:
             if doc.endswith("```"):
                 doc = doc[:-3].strip()
 
+            # Remove "class ...:" line if it appears
+            lines = doc.splitlines()
+            if lines and lines[0].strip().startswith("class "):
+                lines = lines[1:]
+            doc = "\n".join(lines).strip()
+
             # Remove "def ...:" line if it appears
             lines = doc.splitlines()
             if lines and lines[0].strip().startswith("def "):
@@ -88,8 +94,9 @@ def insert_docstrings(source_code: str, docstring_data: List[tuple]) -> str:
             key = (original_node.name.value, "class")
             if key in self.doc_map and not original_node.get_docstring():
                 doc = self.doc_map[key]
+                doc = self.sanitize_docstring(doc)
                 doc_node = SimpleStatementLine(body=[Expr(value=SimpleString(f'"""{doc}"""'))])
-                return updated_node.with_changes(body=updated_node.body.with_changes(body=[doc_node] + updated_node.body.body))
+                return updated_node.with_changes(body=updated_node.body.with_changes(body=[doc_node] + list(updated_node.body.body)))
             return updated_node
 
     tree = cst.parse_module(source_code)
